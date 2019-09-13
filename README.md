@@ -1,0 +1,2 @@
+# wishlist
+Wishlist for Magalu
