@@ -1,6 +1,8 @@
 from fastapi import FastAPI, HTTPException
 from starlette.responses import JSONResponse
 from pydantic import BaseModel, EmailStr, ValidationError, validator
+
+from client import ProductAPIConsumer
 from models import Customer as MongoCustomer
 
 app = FastAPI()
@@ -17,23 +19,28 @@ class Customer(BaseModel):
         return v
 
 
+class Product(BaseModel):
+    uuid: str
+
+    @pydantic.validator('uuid', pre=True, always=True)
+    def default_uuid(cls, value):
+        response =  ProductAPIConsumer().product(value)
+        cls.response = response
+        print(response)
+        return value
+
+
 @app.get("/")
 def read_root():
     return {"version": "1.0.0"}
 
 
 @app.post("/customers/{email_or_uuid}/products")
-def add_product(email_or_uuid: str, ):
+def add_product(email_or_uuid: str, product: Product):
     customer = MongoCustomer.get_customer(email_or_uuid)
-
-    print('*' * 100)
-    print(customer)
-    print(customer.to_json())
-
-    if customer:
-        return customer.to_json()
-
-    raise HTTPException(status_code=404, detail="Customer not found")
+    print(product)
+    print(product.response)
+    return {'O': 'K'}
 
 
 @app.get("/customers/{email_or_uuid}")
