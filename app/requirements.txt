@@ -1,0 +1,14 @@
+python-slugify
+fastapi
+uplink
+email-validator
+uvicorn
+pydantic
+pydantic[email]
+mongoengine
+
+mongomock
+pytest==4.3.0
+flake8==3.5.0
+pytest-cov==2.6.1
+pytest-pythonpath==0.7.3

@@ -1,0 +1,42 @@
+version: "3"
+services:
+  test:
+    build:
+      context: .
+    volumes:
+      - ./:/var/task
+    environment:
+      - MONGO_HOST=mongomock://localhost/
+      - MONGO_DATABASE=mongoenginetest
+      - MONGO_USER=''
+      - MONGO_PASSWORD=''
+      - PORT=4000
+  mongo:
+    build: ./docker/mongo-docker
+    volumes:
+      - "./mongo/db:/data/db"
+    restart: always
+    ports:
+      - "27016:27016"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: 123456
+  api:
+    command:
+      uvicorn main:app --host 0.0.0.0 --port 4000
+    build:
+      context: .
+    volumes:
+      - ./:/var/task
+    ports:
+      - "4000"
+    environment:
+      - MONGO_HOST=mongodb://root:123456@mongo:27017/
+      - MONGO_DATABASE=wishlist
+      - MONGO_USER=root
+      - MONGO_PASSWORD=123456
+      - PORT=4000
+    depends_on:
+      - mongo
+    links:
+      - mongo
