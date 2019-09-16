@@ -3,7 +3,7 @@ from starlette.responses import JSONResponse
 from pydantic import BaseModel, EmailStr, ValidationError, validator
 
 from client import ProductAPIConsumer
-from models import Customer as MongoCustomer
+from models import Customer as MongoCustomer, Product as MongoProduct
 
 app = FastAPI()
 
@@ -11,6 +11,7 @@ app = FastAPI()
 class Customer(BaseModel):
     name: str
     email: str
+    uuid: str = None
 
     @validator('email')
     def name_already_exists(cls, v):
@@ -21,12 +22,18 @@ class Customer(BaseModel):
 
 class Product(BaseModel):
     uuid: str
+    email_or_uuid: str = None
 
-    @pydantic.validator('uuid', pre=True, always=True)
+    @validator('uuid', pre=True, always=True)
     def default_uuid(cls, value):
-        response =  ProductAPIConsumer().product(value)
+        try:
+            response =  ProductAPIConsumer().product(value)
+        except:
+            # jsondecode
+            raise ValueError('Product not exists!')
+
         cls.response = response
-        print(response)
+        cls.link = f'http://challenge-api.luizalabs.com/api/product/{value}'
         return value
 
 
@@ -36,25 +43,43 @@ def read_root():
 
 
 @app.post("/customers/{email_or_uuid}/products")
-def add_product(email_or_uuid: str, product: Product):
+def add_product(*, email_or_uuid: str, product: Product):
     customer = MongoCustomer.get_customer(email_or_uuid)
-    print(product)
-    print(product.response)
-    return {'O': 'K'}
+
+    if customer.check_product(product.uuid):
+        raise HTTPException(status_code=400, detail="Product is already exists for this customer!")
+
+    product = MongoProduct(
+        uuid=product.uuid,
+        data=product.response,
+        link=product.link,
+    )
+    customer.products.append(product)
+    customer.save()
+    return customer.to_json()
+
+
+@app.delete("/customers/{email_or_uuid}/products/{uuid}")
+def remove_product(*, email_or_uuid: str, product_uuid: str):
+    customer = MongoCustomer.get_customer(email_or_uuid)
+
+    if customer.check_product(product.uuid):
+        new_products = [product for product in customer.products if str(product.uuid) != product_uuid]
+        customer.products = new_products
+        customer.save()
+        return JSONResponse(status_code=204, content={"message": "Product deleted!"})
+
+    return JSONResponse(status_code=404, content={"message": "Product not found for this customer!"})
 
 
 @app.get("/customers/{email_or_uuid}")
 def read_item(email_or_uuid: str, q: str = None):
     customer = MongoCustomer.get_customer(email_or_uuid)
 
-    print('*' * 100)
-    print(customer)
-    print(customer.to_json())
-
     if customer:
         return customer.to_json()
 
-    raise HTTPException(status_code=404, detail="Customer not found")
+    return JSONResponse(status_code=404, content={"message": "Customer not found"})
 
 
 @app.delete("/customers/{email_or_uuid}")
