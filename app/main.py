@@ -1,22 +1,37 @@
 import uuid
+import os
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from starlette.responses import JSONResponse
 
 from models import Customer as MongoCustomer, Product as MongoProduct
 from schemas import BaseCustomer, Customer, Product
 
 
+API_USER = os.environ.get('API_USER', None)
+API_PASSWORD = os.environ.get('API_PASSWORD', None)
+
+
 app = FastAPI()
+security = HTTPBasic(realm="simple")
+
+
+# TODO: see future decorator options
+def assert_credentials(credentials: HTTPBasicCredentials = Depends(security)):
+    if not all([credentials.username==API_USER, credentials.password==API_PASSWORD]):
+        raise HTTPException(status_code=401, detail="Invalid credentials!")
 
 
 @app.get("/")
-def read_root():
-    return {"version": "1.0.0"}
+def read_root(credentials: HTTPBasicCredentials = Depends(assert_credentials)):
+    return {
+        "version": "1.0.0",
+    }
 
 
 @app.get("/customers/{uuid_or_email}")
-def get_customer(uuid_or_email: str):
+def get_customer(uuid_or_email: str, credentials: HTTPBasicCredentials = Depends(assert_credentials)):
     '''
     Get the customer detail by customer uuid or email
     If the customer exists, the api will show all customer data and return code 200
@@ -31,7 +46,7 @@ def get_customer(uuid_or_email: str):
 
 
 @app.delete("/customers/{uuid_or_email}")
-def delete_customer(uuid_or_email: str):
+def delete_customer(uuid_or_email: str, credentials: HTTPBasicCredentials = Depends(assert_credentials)):
     '''
     Delete the customer if the customer exists and return code 204
     If not, the api will return the 404 code
@@ -47,7 +62,7 @@ def delete_customer(uuid_or_email: str):
 
 
 @app.post("/customers/")
-def create_customer(*, customer: Customer):
+def create_customer(*, customer: Customer, credentials: HTTPBasicCredentials = Depends(assert_credentials)):
     '''
     Create a new customer, if the post data pass the schema validation
     If pass, return the new customer data with 201 code
@@ -62,7 +77,7 @@ def create_customer(*, customer: Customer):
 
 
 @app.put("/customers/{uuid_or_email}")
-def update_customer(uuid_or_email: str, data: BaseCustomer):
+def update_customer(uuid_or_email: str, data: BaseCustomer, credentials: HTTPBasicCredentials = Depends(assert_credentials)):
     '''
     Update the customer data by customer uuid or email
     If the customer exists, the api will update customer data and return all customer data and 200 code
@@ -85,7 +100,7 @@ def update_customer(uuid_or_email: str, data: BaseCustomer):
 
 
 @app.post("/customers/{uuid_or_email}/products")
-def add_product(*, uuid_or_email: str, product: Product):
+def add_product(*, uuid_or_email: str, product: Product, credentials: HTTPBasicCredentials = Depends(assert_credentials)):
     '''
     Add a new product for customer wishlist
     If all validation pass, return all customer data with 201 code
@@ -110,7 +125,7 @@ def add_product(*, uuid_or_email: str, product: Product):
 
 
 @app.delete("/customers/{email_or_uuid}/products/{product_uuid}")
-def remove_product(email_or_uuid: str, product_uuid: str):
+def remove_product(email_or_uuid: str, product_uuid: str, credentials: HTTPBasicCredentials = Depends(assert_credentials)):
     '''
     Remove a product for customer wishlist
     If all validation pass, return code 204

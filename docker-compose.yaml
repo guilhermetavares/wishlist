@@ -9,6 +9,8 @@ services:
       - MONGO_HOST=mongomock://localhost/
       - MONGO_DATABASE=mongoenginetest
       - PORT=4000
+      - API_USER=test
+      - API_PASSWORD=test
   mongo:
     build: ./docker/mongo-docker
     volumes:
@@ -34,6 +36,8 @@ services:
       - MONGO_USER=root
       - MONGO_PASSWORD=123456
       - PORT=4000
+      - API_USER=user
+      - API_PASSWORD=password
     depends_on:
       - mongo
     links:
