@@ -26,7 +26,8 @@ def assert_credentials(credentials: HTTPBasicCredentials = Depends(security)):
 @app.get("/")
 def api_version(credentials: HTTPBasicCredentials = Depends(assert_credentials)):
     return {
-        "version": "1.0.0",
+        "version": "v1.0.0",
+        "docs": "To see the docs access the url /docs",
     }
 
 
