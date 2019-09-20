@@ -24,7 +24,7 @@ def assert_credentials(credentials: HTTPBasicCredentials = Depends(security)):
 
 
 @app.get("/")
-def read_root(credentials: HTTPBasicCredentials = Depends(assert_credentials)):
+def api_version(credentials: HTTPBasicCredentials = Depends(assert_credentials)):
     return {
         "version": "1.0.0",
     }
@@ -33,9 +33,9 @@ def read_root(credentials: HTTPBasicCredentials = Depends(assert_credentials)):
 @app.get("/customers/{uuid_or_email}")
 def get_customer(uuid_or_email: str, credentials: HTTPBasicCredentials = Depends(assert_credentials)):
     '''
-    Get the customer detail by customer uuid or email
-    If the customer exists, the api will show all customer data and return code 200
-    If not, the api will return the 404 code
+    Get the customer detail by customer uuid or email.
+    If the customer exists, the api will return code 200 and show all customer data.
+    If not, the api will return code 404.
     '''
     customer = MongoCustomer.get_customer(uuid_or_email)
 
@@ -49,7 +49,7 @@ def get_customer(uuid_or_email: str, credentials: HTTPBasicCredentials = Depends
 def delete_customer(uuid_or_email: str, credentials: HTTPBasicCredentials = Depends(assert_credentials)):
     '''
     Delete the customer if the customer exists and return code 204
-    If not, the api will return the 404 code
+    If not, the api will return code 404.
     '''
 
     customer = MongoCustomer.get_customer(uuid_or_email)
@@ -64,9 +64,9 @@ def delete_customer(uuid_or_email: str, credentials: HTTPBasicCredentials = Depe
 @app.post("/customers/")
 def create_customer(*, customer: Customer, credentials: HTTPBasicCredentials = Depends(assert_credentials)):
     '''
-    Create a new customer, if the post data pass the schema validation
-    If pass, return the new customer data with 201 code
-    If not, return a validation error on api
+    Create a new customer, if the post data succeed the schema validation.
+    If succeed, return the new customer data with code 201.
+    If not, return a validation error on api.
     '''
     customer = MongoCustomer(
         uuid=uuid.uuid1(),
@@ -79,10 +79,10 @@ def create_customer(*, customer: Customer, credentials: HTTPBasicCredentials = D
 @app.put("/customers/{uuid_or_email}")
 def update_customer(uuid_or_email: str, data: BaseCustomer, credentials: HTTPBasicCredentials = Depends(assert_credentials)):
     '''
-    Update the customer data by customer uuid or email
-    If the customer exists, the api will update customer data and return all customer data and 200 code
-    If not, the api will return the 404 code
-    If the email is already taken, the api return 422
+    Update the customer data by customer uuid or email.
+    If the customer exists, the api will update customer data and return all customer data and code 200.
+    If not, the api will return code 404.
+    If the email is already taken, the api return code 422.
     '''
 
     customer = MongoCustomer.get_customer(uuid_or_email)
@@ -102,9 +102,9 @@ def update_customer(uuid_or_email: str, data: BaseCustomer, credentials: HTTPBas
 @app.post("/customers/{uuid_or_email}/products")
 def add_product(*, uuid_or_email: str, product: Product, credentials: HTTPBasicCredentials = Depends(assert_credentials)):
     '''
-    Add a new product for customer wishlist
-    If all validation pass, return all customer data with 201 code
-    If not, return a validation error on api or 404
+    Add a new product for customer wishlist.
+    If all validation succeed, return all customer data with code 201.
+    If not, return a validation error on api or code 404.
     '''
     customer = MongoCustomer.get_customer(uuid_or_email)
 
@@ -112,7 +112,7 @@ def add_product(*, uuid_or_email: str, product: Product, credentials: HTTPBasicC
         return JSONResponse(status_code=404, content={"message": "Customer not found"})
 
     if customer.check_product(product.uuid):
-        return JSONResponse(status_code=422, content={"message": "Product is already exists for this customer!"})
+        return JSONResponse(status_code=422, content={"message": "Product already exists for this customer!"})
 
     product = MongoProduct(
         uuid=product.uuid,
@@ -127,9 +127,9 @@ def add_product(*, uuid_or_email: str, product: Product, credentials: HTTPBasicC
 @app.delete("/customers/{email_or_uuid}/products/{product_uuid}")
 def remove_product(email_or_uuid: str, product_uuid: str, credentials: HTTPBasicCredentials = Depends(assert_credentials)):
     '''
-    Remove a product for customer wishlist
-    If all validation pass, return code 204
-    If not, return a validation error on api or 404
+    Remove a product for customer wishlist.
+    If all validation succeed, return code 204.
+    If not, return a validation error on api or code 404.
     '''
 
     customer = MongoCustomer.get_customer(email_or_uuid)
