@@ -1,7 +1,7 @@
 build:
 	docker-compose build
 
-up:
+run:
 	docker-compose up
 
 test: ## Run all tests (pytest).
