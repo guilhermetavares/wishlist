@@ -12,4 +12,4 @@ class ProductAPIConsumer(Consumer):
 
     @get("product/{uuid}")
     def product(self, uuid: Path):
-        pass
+        pass  # pragma: no cover
